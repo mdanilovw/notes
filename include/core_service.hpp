@@ -8,16 +8,21 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <utility>
 
 #include "core.hpp"
 #include "core_action.hpp"
 #include "response.hpp"
+
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 using std::async;
 using std::atomic;
 using std::condition_variable;
 using std::future;
 using std::mutex;
+using std::pair;
 using std::promise;
 using std::shared_ptr;
 using std::thread;
@@ -47,7 +52,7 @@ struct CoreService {
     /**
      * Destructor
      */
-    virtual ~CoreService() {};
+    virtual ~CoreService() {}
 
     /**
      * Start accepting commands
@@ -93,15 +98,17 @@ struct LocalCoreService: public CoreService {
      */ 
     void stop() override;
 
-    private:
+protected:
+    // Indicates whether service should continue operating
+    atomic<bool> stopService;
+
+private:
     // Core Actions queue
     queue<unique_ptr<CoreAction>> actions;
     // Core Actions queue synchronization
-    mutex actionsQueueMutex;
+    mutex actionsMutex;
     // Notification about incoming Core Actions
-    condition_variable actionsQueueCv;
-    // Indicates whether service should continue operating
-    atomic<bool> stopService;
+    condition_variable actionsCv;
     // Executes Core Actions in the queue asynchronously 
     thread execActionThread;
 
@@ -114,10 +121,66 @@ struct LocalCoreService: public CoreService {
 /**
  * Should provide access to the core for client code over network
  */
-struct NetworkCoreService: public CoreService {
-    future<Response> execAction(unique_ptr<CoreAction>&&) override {
-        throw string{ "Network Core Service is not implemented" };
-    }
+struct NetworkCoreService: public LocalCoreService {
+    /**
+     * @brief NetworkCoreService constructor
+     * @param core Pointer to the application core
+     */
+    NetworkCoreService(shared_ptr<Core> &core): 
+        LocalCoreService{ core }, 
+        port{ 8080 }, 
+        connectionQueueSize{ 30 }
+    {}
+
+    void start() override;
+    void stop() override;
+
+private:
+    static constexpr int SOCKET_OPTION{ 1 };
+    // Server port
+    int port;
+    // Number of connections in queue until they are refused
+    int connectionQueueSize;
+    // File descriptor corresponding server socket
+    int serverFd;
+    // Socket address
+    struct sockaddr_in socketAddr;
+    // Queue of sockets awaiting processing
+    queue<int> sockets;
+    // Socket queue synchronization
+    mutex socketMutex;
+    // Notification about incoming sockets
+    condition_variable socketCv;
+    // Socket processing thread
+    thread socketProcessingThread;
+
+    /**
+     * @brief readSocket Read data from socket
+     * @param socket Socket
+     * @return Pair: data length + ptr to the data
+     */
+    virtual pair<size_t, unique_ptr<char>> readSocket(int socket);
+
+    /**
+     * @brief Create server socket
+     */
+    virtual void createServerSocket();
+
+    /**
+     * @brief Accept client requests from network interface
+     */
+    virtual void acceptRequests();
+
+    /**
+     * @brief Process particular client request
+     * @param socket Target socket
+     */
+    virtual void processRequest(int socket);
+
+    /**
+     * @brief processNextRequest Process next request in the queue
+     */
+    virtual void processNextRequest();
 };
 
 #endif

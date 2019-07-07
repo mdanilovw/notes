@@ -67,7 +67,7 @@ ReturnCode Core::removeRecord(int id) {
 
 ReturnCode Core::sync() {
     std::ofstream ofs(DATA_FILE);
-    if(!ofs.is_open()) throw "I/O ERROR";
+    if(!ofs.is_open()) throw string{ "I/O ERROR" };
 
     if(encryption) {
         std::stringstream textStream;

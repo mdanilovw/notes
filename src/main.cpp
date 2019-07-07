@@ -4,8 +4,8 @@
 
 #include <cstring>
 #include <memory>
-#include "cli.hpp"
-#include "core.hpp"
+#include "../include/cli.hpp"
+#include "../include/core.hpp"
 
 using std::shared_ptr;
 
@@ -19,11 +19,11 @@ int main(int argc, char *argv[])
 
     try { 
         shared_ptr<Core> core{ new Core }; 
-        shared_ptr<CoreService> coreService{ new LocalCoreService { core } };
+        shared_ptr<CoreService> coreService{ new NetworkCoreService { core } };
         coreService->start();
 
-        Cli cli{ coreService, encryption };
-        cli.start(); 
+        //Cli cli{ coreService, encryption };
+        //cli.start();
 
         coreService->stop();
         return 0;

@@ -15,7 +15,7 @@ void AddRecordAction::exec() {
 }
 
 void AddRecordAction::undo() {
-    throw "Undo not implemented for AddRecord";
+    throw string{ "Undo not implemented for AddRecord" };
 }
 
 void UpdateRecordAction::exec() {
@@ -24,7 +24,7 @@ void UpdateRecordAction::exec() {
 }
 
 void UpdateRecordAction::undo() {
-    throw "Undo not implemented for Update Record";
+    throw string{ "Undo not implemented for Update Record" };
 }
 
 void SearchRecordsAction::exec() {
@@ -47,7 +47,7 @@ void SetPasswordAction::exec() {
 }
 
 void SetPasswordAction::undo() {
-    throw "Undo not implemented for Set Password action";
+    throw string{ "Undo not implemented for Set Password action" };
 }
 
 void StartAction::exec() {
@@ -56,5 +56,5 @@ void StartAction::exec() {
 }
 
 void StartAction::undo() {
-    throw "Undo not implemented for Start action";
+    throw string{ "Undo not implemented for Start action" };
 }
